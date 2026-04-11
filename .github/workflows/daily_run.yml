@@ -1,8 +1,8 @@
 name: Daily Lead Sentinel
 on:
   schedule:
-    - cron: '30 2 * * *' # Runs daily at 8:00 AM IST
-  workflow_dispatch: # This line adds the manual "Run workflow" button
+    - cron: '30 2 * * *'
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -14,14 +14,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10' # Upgraded to 3.10 to stop those warnings
 
       - name: Install Dependencies
         run: |
-          pip install google-generativeai requests
+          pip install google-generativeai requests firebase-admin
 
       - name: Run Sentinel
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+          FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
         run: python sentinel.py
