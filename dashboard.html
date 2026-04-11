@@ -157,7 +157,7 @@
             feed.innerHTML = "";
             snapshot.forEach((doc) => {
                 const lead = doc.data();
-                const time = lead.timestamp ? new Date(lead.timestamp.seconds * 1000).toLocaleDateString() : 'Active Now';
+                const time = (lead.timestamp && lead.timestamp.seconds) ? new Date(lead.timestamp.seconds * 1000).toLocaleDateString() : 'Active Now';
                 
                 feed.innerHTML += `
                     <article class="glass-card overflow-hidden group">
@@ -182,6 +182,10 @@
                     </article>
                 `;
             });
+        }, (error) => {
+            const feed = document.getElementById("leads-feed");
+            console.error("Firestore Error:", error);
+            feed.innerHTML = `<div class="glass-card p-20 text-center text-red-500 uppercase tracking-widest text-[10px]">Connection Error: ${error.message}. Check Firestore permissions.</div>`;
         });
 
         function copyDraft(text) {
