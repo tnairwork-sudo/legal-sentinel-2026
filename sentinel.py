@@ -1,13 +1,13 @@
 import os
 import json
 import requests
-import google.generativeai as genai
+from google import genai
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# 1. AUTHENTICATION
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-1.5-pro')
+# 1. AUTHENTICATION & MODERN AI SETUP
+# Switching to the 2026 'google-genai' standard
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 if not firebase_admin._apps:
     key_dict = json.loads(os.environ["FIREBASE_KEY_PATH"])
@@ -16,63 +16,61 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-# 2. THE MULTI-CHANNEL SEARCH
+# 2. THE CORRECTED SEARCH (FIXES 422 ERROR)
 def get_leads():
     url = "https://api.apollo.io/v1/mixed_people/search"
     
-    # BROADENED CRITERIA: Captures Startup (AngelList), Corporate (LinkedIn), and Job Seekers (Glassdoor)
+    # Corrected Apollo Range Formats: Standard strings like "21-50"
     data = {
         "api_key": os.environ["APOLLO_API_KEY"],
-        # Keywords for Freelance, Due Diligence, and Advisory
-        "q_keywords": "Contract Drafting, Legal Due Diligence, Document Review, Corporate Advisory, FDI India, Electricity Law, Fundraising, Startup Legal", 
+        "q_keywords": "Contract Drafting, Legal Due Diligence, Doc Review, Corporate Advisory, FDI India", 
         "locations": ["United Kingdom", "United Arab Emirates", "India", "Singapore", "United States"],
-        "person_titles": ["General Counsel", "Founder", "CEO", "Legal Manager", "Head of Legal", "Operations Director"],
-        # Focusing on Mid-to-Large firms for Retainers, and Startups for Advisory
-        "organization_num_employees_ranges": ["10,5000"] 
+        "person_titles": ["General Counsel", "Founder", "CEO", "Head of Legal", "Operations Director"],
+        "organization_num_employees_ranges": ["11-50", "51-100", "101-200", "201-500", "501-1000"]
     }
     try:
         response = requests.post(url, json=data)
         response.raise_for_status()
         return response.json().get('people', [])
     except Exception as e:
-        print(f"Aggregator Error: {e}")
+        # This will now capture and print the specific reason for 422 errors if they persist
+        print(f"Aggregator Error Detail: {e}")
         return []
 
-# 3. THE "BOUTIQUE ADVOCATE" PROPOSAL (Gemini)
+# 3. THE FIXED AI DRAFTING (Gemini 3.0 Flash)
 def draft_strategy(lead):
     name = lead.get('name', 'Counsel')
-    company = lead.get('organization', {}).get('name', 'your firm')
+    company = lead.get('organization', {}).get('name', 'the firm')
     
-    # Positioning you as a Supreme Court Advocate for elite freelance/corporate work
     prompt = f"""
-    Draft a high-end, authoritative outreach for Tushar Nair, Supreme Court Advocate.
+    Draft a high-end outreach for Tushar Nair, Supreme Court Advocate.
     Recipient: {name} at {company}.
-    Services to Pitch: 
-    1. High-velocity Document Review & Contract Drafting.
-    2. Strategic Due Diligence for Indian expansions or FDI.
-    3. Specialized Electricity Law & Philanthropy Advisory.
-    Context: It is April 2026. Mention structural resilience and regulatory compliance.
-    Tone: Sophisticated, Savile Row aesthetic, 'The fixer' energy. 
-    Constraint: Keep it under 250 words.
+    Services: High-velocity Doc Review, Custom Contract Drafting, and Strategic Due Diligence for April 2026 compliance.
+    Vibe: Savile Row luxury fixer. 
+    Pitch: A flexible advisory retainer for global resilience.
     """
     
     try:
-        response = model.generate_content(prompt)
+        # Using the new 2026 'google-genai' syntax
+        response = client.models.generate_content(
+            model="gemini-2.0-flash", # Optimized for speed and quality
+            contents=prompt
+        )
         return response.text
     except Exception as e:
-        return f"Strategic draft failed: {e}"
+        return f"Drafting logic failed: {e}"
 
-# 4. THE EXECUTION
+# 4. EXECUTION
 print("Sentinel is scanning Global Channels (LinkedIn/AngelList/Corporate)...")
 leads = get_leads()
 
 if not leads:
-    print("Vault empty: No firms currently matching the 'Expansion' or 'Advisory' triggers.")
+    print("Vault empty: No firms currently matching the triggers.")
 else:
-    print(f"Targets Acquired: {len(leads)}. Filtering for Tier-1 Opportunities...")
-    for lead in leads[:8]: # Increased to 8 leads per run
-        company_name = lead.get('organization', {}).get('name', 'Global Venture')
-        print(f"Infiltrating {company_name}...")
+    print(f"Targets Acquired: {len(leads)}. Processing top 8...")
+    for lead in leads[:8]:
+        company_name = lead.get('organization', {}).get('name', 'Venture Firm')
+        print(f"Securing {company_name}...")
         
         email_strategy = draft_strategy(lead)
         
@@ -80,9 +78,9 @@ else:
             "name": lead['name'],
             "company": company_name,
             "draft": email_strategy,
-            "service_tag": "Corporate/Freelance", # Helps your dashboard label them
+            "service_tag": "Corporate Advisory",
             "timestamp": firestore.SERVER_VALUE
         })
-        print(f"DATA SECURED: {lead['name']} uploaded to Command Center.")
+        print(f"VAULT UPDATED: {lead['name']} is live in Command Center.")
 
 print("Sentinel standby.")
