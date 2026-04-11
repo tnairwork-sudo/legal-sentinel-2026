@@ -88,8 +88,16 @@ else:
             db.collection("sentinel_leads").add({
                 "name": lead['name'],
                 "company": company_name,
+                "email": lead.get('email', ''),
                 "draft": email_strategy,
-                "service_tag": "Boutique Advisory", # Categorizes the work for you
+                "service_tag": "Boutique Advisory",  # Categorizes the work for you
+                # Feature 4: Lead Status Tracking fields
+                "status": "new",                     # new | contacted | qualified | proposal_sent | converted | rejected
+                "pipeline_stage": "discovery",       # discovery | outreach | proposal | negotiation | closed
+                "notes": "",                         # Free-text notes / interaction log
+                "last_contacted": None,              # Populated by outreach.py on first send
+                "conversion_value": 0,               # USD value assigned when status → converted
+                "email_status": "pending",           # pending | sent | failed | skipped (set by outreach.py)
                 "timestamp": firestore.SERVER_TIMESTAMP  # Fixed: SERVER_VALUE is not valid; use SERVER_TIMESTAMP
             })
             print(f"DATA SECURED: {lead['name']} is live in the Command Center.")
