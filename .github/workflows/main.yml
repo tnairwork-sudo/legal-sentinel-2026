@@ -1,16 +1,27 @@
-name: Daily Legal Outreach
+name: Daily Lead Sentinel
 on:
   schedule:
     - cron: '30 2 * * *' # Runs daily at 8:00 AM IST
+  workflow_dispatch: # This line adds the manual "Run workflow" button
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install google-generativeai requests
+
       - name: Run Sentinel
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
-        run: |
-          pip install google-generativeai requests
-          python sentinel.py
+        run: python sentinel.py
