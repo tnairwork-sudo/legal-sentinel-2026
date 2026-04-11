@@ -2,26 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentinel // Tushar Nair Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0a0a0a; color: #d4af37; font-family: 'Inter', sans-serif; padding: 40px; }
-        .header { border-bottom: 1px solid #333; padding-bottom: 20px; margin-bottom: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
-        .card { background: #161616; border: 1px solid #222; padding: 25px; border-radius: 8px; transition: 0.3s; }
-        .card:hover { border-color: #d4af37; }
-        .company { font-size: 1.2em; font-weight: bold; color: #fff; margin-bottom: 5px; }
-        .meta { color: #888; font-size: 0.9em; margin-bottom: 15px; }
-        .btn { background: #d4af37; color: #000; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
-        pre { background: #000; padding: 15px; border-radius: 4px; font-size: 0.8em; overflow-x: auto; white-space: pre-wrap; color: #ccc; }
+        :root {
+            --gold: #d4af37;
+            --bg: #0a0a0a;
+            --card-bg: #121212;
+            --border: #222;
+            --text-main: #ffffff;
+            --text-dim: #888;
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            padding: 50px; 
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .header { 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 30px; 
+            margin-bottom: 50px; 
+            letter-spacing: 2px;
+        }
+
+        .header h1 { margin: 0; font-weight: 700; color: var(--gold); font-size: 1.5rem; }
+        .header p { margin: 10px 0 0; color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem; }
+
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); 
+            gap: 30px; 
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            padding: 30px; 
+            border-radius: 4px; 
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .card:hover { border-color: var(--gold); transform: translateY(-5px); }
+
+        .company { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .meta { color: var(--gold); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 20px; font-weight: 400; }
+
+        pre { 
+            background: #000; 
+            padding: 20px; 
+            border-radius: 4px; 
+            font-size: 0.85rem; 
+            overflow-x: auto; 
+            white-space: pre-wrap; 
+            color: #bbb;
+            border-left: 2px solid var(--gold);
+            height: 200px;
+            overflow-y: scroll;
+        }
+
+        .btn { 
+            background: var(--gold); 
+            color: #000; 
+            border: none; 
+            padding: 12px 25px; 
+            border-radius: 2px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            width: 100%; 
+            margin-top: 20px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+        }
+
+        .btn:hover { background: #fff; }
+
+        /* Custom Scrollbar for Pre */
+        pre::-webkit-scrollbar { width: 5px; }
+        pre::-webkit-scrollbar-thumb { background: var(--gold); }
     </style>
 </head>
 <body>
+
     <div class="header">
         <h1>SENTINEL COMMAND</h1>
-        <p>Strategic Risk & Retainer Intelligence // April 2026</p>
+        <p>Strategic Risk & Retainer Intelligence // Tushar Nair SC Advocate</p>
     </div>
+
     <div class="grid" id="lead-grid">
         </div>
 
-    </body>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // IMPORTANT: REPLACE THIS BLOCK WITH YOUR CONFIG FROM FIREBASE CONSOLE
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const leadGrid = document.getElementById('lead-grid');
+
+        // Fetch Data
+        const q = query(collection(db, "sentinel_leads"), orderBy("timestamp", "desc"));
+        
+        onSnapshot(q, (snapshot) => {
+            leadGrid.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const lead = doc.data();
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="company">${lead.company}</div>
+                    <div class="meta">${lead.name} • ${lead.title}</div>
+                    <pre id="draft-${doc.id}">${lead.draft}</pre>
+                    <button class="btn" onclick="copyDraft('${doc.id}')">Copy Strategic Draft</button>
+                `;
+                leadGrid.appendChild(card);
+            });
+        });
+
+        // Copy Engine
+        window.copyDraft = (id) => {
+            const text = document.getElementById(`draft-${id}`).innerText;
+            navigator.clipboard.writeText(text);
+            const btn = event.target;
+            btn.innerText = "Copied to Clipboard";
+            setTimeout(() => { btn.innerText = "Copy Strategic Draft"; }, 2000);
+        };
+    </script>
+</body>
 </html>
