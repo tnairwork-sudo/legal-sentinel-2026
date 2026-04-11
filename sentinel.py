@@ -6,6 +6,13 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # 1. 2026 MODERN AI SETUP
+
+# Validate required environment variables before any API calls
+required_env_vars = ["GEMINI_API_KEY", "APOLLO_API_KEY", "FIREBASE_KEY_PATH"]
+missing_vars = [v for v in required_env_vars if not os.environ.get(v)]
+if missing_vars:
+    raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}. Set them before running the Sentinel.")
+
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 if not firebase_admin._apps:
@@ -55,11 +62,12 @@ def draft_strategy(lead):
     
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash", 
+            model="gemini-1.5-flash",  # Fixed: gemini-2.0-flash is not a valid model name
             contents=prompt
         )
         return response.text
     except Exception as e:
+        print(f"AI Draft Error for {name} at {company}: {e}")
         return f"AI Drafting logic standby: {e}"
 
 # 4. MISSION EXECUTION
@@ -76,11 +84,14 @@ else:
         
         email_strategy = draft_strategy(lead)
         
-        db.collection("sentinel_leads").add({
-            "name": lead['name'],
-            "company": company_name,
-            "draft": email_strategy,
-            "service_tag": "Boutique Advisory", # Categorizes the work for you
-            "timestamp": firestore.SERVER_VALUE
-        })
-        print(f"DATA SECURED: {lead['name']} is live in the Command Center.")
+        try:
+            db.collection("sentinel_leads").add({
+                "name": lead['name'],
+                "company": company_name,
+                "draft": email_strategy,
+                "service_tag": "Boutique Advisory", # Categorizes the work for you
+                "timestamp": firestore.SERVER_TIMESTAMP  # Fixed: SERVER_VALUE is not valid; use SERVER_TIMESTAMP
+            })
+            print(f"DATA SECURED: {lead['name']} is live in the Command Center.")
+        except Exception as e:
+            print(f"Firestore Write Error for {lead['name']}: {e}")
