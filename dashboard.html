@@ -157,7 +157,13 @@
             feed.innerHTML = "";
             snapshot.forEach((doc) => {
                 const lead = doc.data();
-                const time = lead.timestamp ? new Date(lead.timestamp.seconds * 1000).toLocaleDateString() : 'Active Now';
+                // Null-safe timestamp: SERVER_TIMESTAMP may arrive as null on first write; fall back gracefully
+                let time = 'Active Now';
+                if (lead.timestamp && lead.timestamp.seconds !== null && lead.timestamp.seconds !== undefined) {
+                    time = new Date(lead.timestamp.seconds * 1000).toLocaleDateString();
+                } else if (lead.timestamp instanceof Date) {
+                    time = lead.timestamp.toLocaleDateString();
+                }
                 
                 feed.innerHTML += `
                     <article class="glass-card overflow-hidden group">
@@ -182,6 +188,13 @@
                     </article>
                 `;
             });
+        }, (error) => {
+            // Error handler: catches Firestore permission errors and connection failures
+            console.error("Firestore Sync Error:", error);
+            const feed = document.getElementById("leads-feed");
+            feed.innerHTML = `<div class="glass-card p-20 text-center text-red-500 uppercase tracking-widest text-[10px]">
+                Command Center Offline: ${error.message}. Check Firestore permissions or connection.
+            </div>`;
         });
 
         function copyDraft(text) {
