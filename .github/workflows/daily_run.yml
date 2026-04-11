@@ -1,28 +1,47 @@
-name: Daily Lead Sentinel
+name: Legal Sentinel — Scheduled Lead Collection
+
 on:
+  # Run every 6 hours (Feature 5: Scheduled Execution)
   schedule:
-    - cron: '30 2 * * *'
-  workflow_dispatch: 
+    - cron: '0 */6 * * *'
+  # Allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      run_analytics:
+        description: 'Also run analytics snapshot after sentinel'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
-  build:
+  sentinel:
+    name: Collect & Analyse Leads
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # UPGRADED TO THE 2026 STANDARD
+          python-version: '3.12'
+          cache: 'pip'
 
       - name: Install Dependencies
-        run: |
-          pip install google-genai requests firebase-admin # Modern SDKs
+        run: pip install -r requirements.txt
 
-      - name: Run Sentinel
+      - name: Run Sentinel (lead collection)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
           FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
         run: python sentinel.py
+
+      - name: Run Analytics Snapshot
+        # Always run analytics even if sentinel has a partial failure,
+        # unless the step was explicitly skipped.
+        if: ${{ github.event.inputs.run_analytics != 'false' }}
+        env:
+          FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
+        run: python analytics.py --report daily --no-store
