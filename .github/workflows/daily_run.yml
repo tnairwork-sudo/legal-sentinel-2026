@@ -12,6 +12,11 @@ on:
         required: false
         default: 'true'
         type: boolean
+      run_outreach:
+        description: 'Run email outreach after sentinel'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   sentinel:
@@ -31,12 +36,35 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Sentinel (lead collection)
+      - name: Validate Required Secrets
+        run: |
+          missing=()
+          [ -z "$GEMINI_API_KEY" ]    && missing+=("GEMINI_API_KEY")
+          [ -z "$APOLLO_API_KEY" ]    && missing+=("APOLLO_API_KEY")
+          [ -z "$FIREBASE_KEY_PATH" ] && missing+=("FIREBASE_KEY_PATH")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Add these secrets at: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "All required secrets are present ✓"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
           FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
-        run: python sentinel.py
+
+      - name: Run Sentinel (lead collection)
+        id: sentinel
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+          FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
+          ENVIRONMENT: production
+        run: |
+          echo "::group::Sentinel output"
+          python sentinel.py 2>&1 | tee sentinel.log
+          echo "::endgroup::"
+          echo "Sentinel run completed at $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
       - name: Run Analytics Snapshot
         # Always run analytics even if sentinel has a partial failure,
@@ -44,4 +72,44 @@ jobs:
         if: ${{ github.event.inputs.run_analytics != 'false' }}
         env:
           FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
-        run: python analytics.py --report daily --no-store
+          ENVIRONMENT: production
+        run: |
+          echo "::group::Analytics output"
+          python analytics.py --report daily --no-store 2>&1 | tee analytics.log
+          echo "::endgroup::"
+          echo "Analytics snapshot completed at $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+      - name: Run Email Outreach (dry run in CI)
+        # Only runs when explicitly requested via workflow_dispatch.
+        # Always uses --dry-run in CI to prevent accidental bulk sends.
+        if: ${{ github.event.inputs.run_outreach == 'true' }}
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_NAME: ${{ secrets.SENDER_NAME }}
+          FIREBASE_KEY_PATH: ${{ secrets.FIREBASE_KEY_PATH }}
+          ENVIRONMENT: production
+        run: |
+          echo "::group::Outreach output (dry run)"
+          python outreach.py --dry-run 2>&1 | tee outreach.log
+          echo "::endgroup::"
+          echo "Outreach dry-run completed at $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+      - name: Upload Execution Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-logs-${{ github.run_id }}
+          path: |
+            sentinel.log
+            analytics.log
+            outreach.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "::error::Legal Sentinel workflow failed."
+          echo "Check the logs above for details."
+          echo "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
