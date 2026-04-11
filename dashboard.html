@@ -8,122 +8,193 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --gold: #B8860B;
+            --obsidian: #050505;
+        }
         body {
-            background-color: #050505;
+            background-color: var(--obsidian);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(184, 134, 11, 0.05) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(184, 134, 11, 0.03) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(184, 134, 11, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(184, 134, 11, 0.08) 0px, transparent 50%);
             font-family: 'Inter', sans-serif;
-            color: #e5e5e5;
+            color: #f1f1f1;
         }
         .glass-card {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1.5rem;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 1.25rem;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
         .glass-card:hover {
-            border-color: rgba(184, 134, 11, 0.4);
-            transform: translateY(-5px);
+            border-color: rgba(184, 134, 11, 0.5);
             background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
-        .gold-gradient {
-            background: linear-gradient(135deg, #B8860B 0%, #FFD700 100%);
+        .gold-text {
+            background: linear-gradient(135deg, #B8860B 0%, #E6B43C 50%, #B8860B 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .yoshiki-pattern {
-            opacity: 0.05;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        .yoshiki-overlay {
+            position: fixed;
+            inset: 0;
+            opacity: 0.04;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l40 40-40 40L0 40z' fill='%23ffffff' fill-rule='evenodd'/%3E%3C/svg%3E");
+            z-index: 0;
         }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
     </style>
 </head>
-<body class="min-h-screen p-8 relative overflow-x-hidden">
-    <div class="yoshiki-pattern absolute inset-0 pointer-events-none"></div>
+<body class="min-h-screen p-6 md:p-12 relative">
+    <div class="yoshiki-overlay"></div>
 
-    <header class="max-w-7xl mx-auto mb-12 flex justify-between items-end">
+    <header class="max-w-7xl mx-auto mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
         <div>
-            <h1 class="text-5xl font-bold mb-2 gold-gradient tracking-tight" style="font-family: 'Playfair Display';">Sentinel Command</h1>
-            <p class="text-sm uppercase tracking-widest text-gray-500">Strategic Risk Intelligence // Tushar Nair SC Advocate</p>
+            <h1 class="text-6xl font-bold tracking-tight gold-text mb-3" style="font-family: 'Playfair Display';">Sentinel Command</h1>
+            <p class="text-xs uppercase tracking-[0.4em] text-gray-500 font-semibold italic">Strategic Risk Intelligence // Tushar Nair SC Advocate</p>
         </div>
-        <div class="text-right">
-            <div id="status-pulse" class="inline-block w-3 h-3 bg-yellow-600 rounded-full animate-pulse mr-2"></div>
-            <span class="text-xs uppercase font-semibold text-gray-400">Live Resilience Feed</span>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <div class="flex items-center justify-end gap-2 mb-1">
+                    <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                    <span class="text-[10px] uppercase tracking-widest text-yellow-600 font-bold">Vault Connection Active</span>
+                </div>
+                <p class="text-[10px] text-gray-600 uppercase tracking-widest">Retainer Target: $100k MRR</p>
+            </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto grid grid-cols-12 gap-8">
-        
-        <div class="col-span-12 lg:col-span-4 space-y-8">
-            <div class="glass-card p-6">
-                <h3 class="text-xs uppercase tracking-widest text-gray-400 mb-6 font-semibold">2026 Risk Distribution</h3>
-                <canvas id="riskChart" class="w-full"></canvas>
-            </div>
+    <main class="max-w-7xl mx-auto grid grid-cols-12 gap-10 relative z-10">
+        <aside class="col-span-12 lg:col-span-4 space-y-8">
+            <section class="glass-card p-8">
+                <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-8 font-bold border-b border-white/5 pb-4">2026 Regulatory Risk Radar</h3>
+                <canvas id="riskRadar" class="max-w-full"></canvas>
+            </section>
             
-            <div class="glass-card p-6">
-                <h3 class="text-xs uppercase tracking-widest text-gray-400 mb-6 font-semibold">Retainer Potential (MRR)</h3>
-                <div class="text-4xl font-light text-white mb-2">$<span id="revenue-projection">45,000</span></div>
-                <div class="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
-                    <div class="bg-yellow-600 h-full w-2/5"></div>
+            <section class="glass-card p-8">
+                <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-6 font-bold">Retainer Pipeline Efficiency</h3>
+                <div class="flex items-end gap-2 mb-4">
+                    <span class="text-4xl font-light text-white italic tracking-tighter">$45,000</span>
+                    <span class="text-xs text-gray-500 mb-1">/ Monthly</span>
                 </div>
-                <p class="text-[10px] text-gray-500 mt-2">Projection based on current April 1st Regulatory triggers.</p>
-            </div>
-        </div>
+                <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-700 w-2/5"></div>
+                </div>
+                <p class="text-[10px] text-gray-600 mt-4 leading-relaxed">System-generated leads based on April 2026 Electricity Law & Philanthropy triggers.</p>
+            </section>
+        </aside>
 
         <div class="col-span-12 lg:col-span-8">
-            <div id="leads-container" class="grid grid-cols-1 gap-6">
-                <div class="glass-card p-12 text-center text-gray-500">
-                    <p class="animate-pulse">Accessing Secure Firestore Node...</p>
+            <div id="leads-feed" class="space-y-8">
+                <div class="glass-card p-20 text-center">
+                    <div class="inline-block w-8 h-8 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-xs uppercase tracking-widest text-gray-500">Decrypting Firestore Node...</p>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // FIREBASE INITIALIZATION
+        // 1. FIREBASE MASTER CONFIG
         const firebaseConfig = {
-            projectId: "tnlaw-87ba6", 
+            apiKey: "AIzaSyDpTOxYombXaKtoO5PYmb9D-rlrgdsJDkg",
+            authDomain: "tnlaw-87ba6.firebaseapp.com",
+            projectId: "tnlaw-87ba6",
+            storageBucket: "tnlaw-87ba6.firebasestorage.app",
+            messagingSenderId: "410481207969",
+            appId: "1:410481207969:web:bc048caf184422dda4dee0",
+            measurementId: "G-7SLQ8TGXE6"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ANALYTICS SETUP
-        const ctx = document.getElementById('riskChart').getContext('2d');
+        // 2. RADAR CHART INITIALIZATION
+        const ctx = document.getElementById('riskRadar').getContext('2d');
         new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: ['Electricity', 'Philanthropy', 'FDI', 'Taxation', 'CSR', 'Governance'],
+                labels: ['Electricity', 'Philanthropy', 'FDI', 'FCRA', 'CSR', 'Governance'],
                 datasets: [{
-                    label: 'Sector Risk Level',
-                    data: [95, 80, 70, 60, 50, 85],
-                    backgroundColor: 'rgba(184, 134, 11, 0.2)',
+                    label: 'Risk Vector',
+                    data: [95, 88, 72, 90, 65, 82],
+                    backgroundColor: 'rgba(184, 134, 11, 0.15)',
                     borderColor: '#B8860B',
-                    borderWidth: 1,
-                    pointBackgroundColor: '#FFD700'
+                    borderWidth: 1.5,
+                    pointBackgroundColor: '#FFD700',
+                    pointRadius: 3
                 }]
             },
             options: {
-                scales: { r: { grid: { color: '#333' }, ticks: { display: false } } },
-                plugins: { legend: { display: false } }
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        angleLines: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { display: false },
+                        pointLabels: { color: '#666', font: { size: 10, weight: '600' } }
+                    }
+                }
             }
         });
 
-        // DATA SYNC
-        db.collection("sentinel_leads").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-            const container = document.getElementById("leads-container");
-            container.innerHTML = "";
+        // 3. LIVE DATA SYNC
+        db.collection("sentinel_leads").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
+            const feed = document.getElementById("leads-feed");
+            if (snapshot.empty) {
+                feed.innerHTML = '<div class="glass-card p-20 text-center text-gray-500 uppercase tracking-widest text-[10px]">The Vault is Empty. Fire the GitHub Sentinel.</div>';
+                return;
+            }
             
+            feed.innerHTML = "";
             snapshot.forEach((doc) => {
                 const lead = doc.data();
-                const card = `
-                    <div class="glass-card p-8 group">
-                        <div class="flex justify-between items-start mb-6">
+                const time = lead.timestamp ? new Date(lead.timestamp.seconds * 1000).toLocaleDateString() : 'Active Now';
+                
+                feed.innerHTML += `
+                    <article class="glass-card overflow-hidden group">
+                        <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
                             <div>
-                                <h2 class="text-2xl font-semibold text-white group-hover:text-yellow-500 transition-colors">${lead.name}</h2>
-                                <p class="text-gray-400 text-sm italic">${lead.company}</p>
+                                <h2 class="text-2xl font-bold text-white mb-1 group-hover:text-yellow-500 transition-colors">${lead.name}</h2>
+                                <p class="text-xs uppercase tracking-widest text-gray-500">${lead.company} // Detected: ${time}</p>
                             </div>
-                            <span class="bg-yellow-900/30 text-yellow-500 text-
+                            <div class="px-4 py-1.5 rounded-full border border-yellow-900/50 bg-yellow-900/10 text-yellow-600 text-[9px] font-bold uppercase tracking-tighter">
+                                Retainer Opportunity
+                            </div>
+                        </div>
+                        <div class="p-8">
+                            <div class="bg-black/40 rounded-xl p-6 mb-8 border border-white/5 font-mono text-[13px] text-gray-400 leading-relaxed max-h-64 overflow-y-auto custom-scroll">
+                                ${lead.draft}
+                            </div>
+                            <button onclick="copyDraft(\`${lead.draft.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" 
+                                class="w-full bg-white/5 border border-white/10 hover:bg-yellow-700 hover:text-black hover:border-yellow-700 py-4 rounded-xl transition-all font-bold uppercase text-[10px] tracking-[0.2em]">
+                                Copy Strategic Outreach
+                            </button>
+                        </div>
+                    </article>
+                `;
+            });
+        });
+
+        function copyDraft(text) {
+            navigator.clipboard.writeText(text);
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "STRATEGY SECURED TO CLIPBOARD";
+            btn.classList.add("bg-yellow-700", "text-black");
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove("bg-yellow-700", "text-black");
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
