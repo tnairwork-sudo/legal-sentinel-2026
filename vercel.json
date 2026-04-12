@@ -1,5 +1,47 @@
 {
   "version": 2,
+  "buildCommand": null,
+  "outputDirectory": null,
+  "installCommand": "pip install -r requirements.txt",
+  "framework": null,
+  "env": {
+    "GEMINI_API_KEY": "@gemini_api_key",
+    "APOLLO_API_KEY": "@apollo_api_key",
+    "FIREBASE_KEY_PATH": "@firebase_key_path",
+    "SENDGRID_API_KEY": "@sendgrid_api_key",
+    "SENDER_EMAIL": "@sender_email",
+    "SENDER_NAME": "@sender_name",
+    "SENTINEL_INTERVAL_HOURS": "6",
+    "RUN_ANALYTICS_AFTER": "0",
+    "RATE_LIMIT_PER_HOUR": "20",
+    "MAX_RETRIES": "3",
+    "ENVIRONMENT": "production",
+    "NODE_ENV": "production"
+  },
+  "crons": [
+    {
+      "path": "/api/run-sentinel",
+      "schedule": "0 */6 * * *"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/run-sentinel",
+      "dest": "/api/run_sentinel.py"
+    },
+    {
+      "src": "/api/run-outreach",
+      "dest": "/api/run_outreach.py"
+    },
+    {
+      "src": "/api/run-analytics",
+      "dest": "/api/run_analytics.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dashboard.html"
+    }
+  ]
   "name": "legal-sentinel-2026",
   "builds": [
     {
