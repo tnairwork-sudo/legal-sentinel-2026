@@ -42,4 +42,36 @@
       "dest": "/dashboard.html"
     }
   ]
+  "name": "legal-sentinel-2026",
+  "builds": [
+    {
+      "src": "api/*.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "dashboard.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/api/scheduler", "dest": "/api/scheduler.py" },
+    { "src": "/api/outreach",  "dest": "/api/outreach.py"  },
+    { "src": "/api/analytics", "dest": "/api/analytics.py" },
+    { "src": "/",              "dest": "/dashboard.html"   }
+  ],
+  "crons": [
+    {
+      "path": "/api/scheduler",
+      "schedule": "0 */6 * * *"
+    }
+  ],
+  "env": {
+    "GEMINI_API_KEY":        "@gemini_api_key",
+    "APOLLO_API_KEY":        "@apollo_api_key",
+    "FIREBASE_KEY_PATH":     "@firebase_key_path",
+    "SENDGRID_API_KEY":      "@sendgrid_api_key",
+    "DASHBOARD_AUTH_TOKEN":  "@dashboard_auth_token",
+    "SCHEDULER_INTERVAL":    "6",
+    "RATE_LIMIT_PER_HOUR":   "20"
+  }
 }

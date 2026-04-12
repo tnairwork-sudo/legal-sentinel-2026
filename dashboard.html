@@ -121,7 +121,22 @@
             <h1 class="text-6xl font-bold tracking-tight gold-text mb-3" style="font-family:'Playfair Display';">Sentinel Command</h1>
             <p class="text-xs uppercase tracking-[0.4em] text-gray-500 font-semibold italic">Strategic Risk Intelligence // Tushar Nair SC Advocate</p>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 flex-wrap">
+            <!-- API Action Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                <button id="btn-refresh-analytics" onclick="fetchAnalyticsAPI()"
+                    class="filter-btn" style="white-space:nowrap;">
+                    📊 Refresh Analytics
+                </button>
+                <button id="btn-run-outreach" onclick="triggerOutreachAPI()"
+                    class="filter-btn" style="white-space:nowrap;">
+                    📧 Run Outreach
+                </button>
+                <button id="btn-run-scheduler" onclick="triggerSchedulerAPI()"
+                    class="filter-btn" style="white-space:nowrap;">
+                    🔄 Run Sentinel Now
+                </button>
+            </div>
             <div class="text-right">
                 <div class="flex items-center justify-end gap-2 mb-1">
                     <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
@@ -131,6 +146,12 @@
             </div>
         </div>
     </header>
+
+    <!-- API Status Toast -->
+    <div id="api-toast" class="hidden fixed bottom-6 right-6 z-50 glass-card px-6 py-4 max-w-sm text-sm"
+         style="border-left: 3px solid #B8860B;">
+        <span id="api-toast-msg"></span>
+    </div>
 
     <!-- FEATURE 1: Search & Filter bar -->
     <div class="max-w-7xl mx-auto mb-8 relative z-10 glass-card p-5">
@@ -246,6 +267,20 @@
             </div>
         </div>
     </main>
+
+    <!-- API Auth Token Section (shown on first visit until token is saved) -->
+    <div id="api-token-section" class="hidden max-w-7xl mx-auto mt-8 relative z-10">
+        <div class="glass-card p-6">
+            <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-4 font-bold">Dashboard Auth Token</h3>
+            <p class="text-xs text-gray-500 mb-4">Enter your <code class="text-yellow-700">DASHBOARD_AUTH_TOKEN</code> from Vercel environment variables to enable outreach actions. Saved locally in your browser.</p>
+            <div class="flex gap-3 items-center">
+                <input id="dashboard-token-input" type="password"
+                    class="search-input flex-1"
+                    placeholder="Paste your DASHBOARD_AUTH_TOKEN here…">
+                <button onclick="saveToken()" class="filter-btn" style="white-space:nowrap;">Save Token</button>
+            </div>
+        </div>
+    </div>
 
     <script>
     // ─── 1. FIREBASE MASTER CONFIG ────────────────────────────────────────────
@@ -588,6 +623,129 @@
     // localStorage helpers
     function savePref(key, val) { try { localStorage.setItem('sentinel_' + key, val); } catch(e){} }
     function loadPref(key, def) { try { return localStorage.getItem('sentinel_' + key) || def; } catch(e){ return def; } }
+
+    // ─── 13. API ENDPOINT HELPERS ─────────────────────────────────────────────
+    let _toastTimer = null;
+
+    function showToast(msg, isError) {
+        const toast = document.getElementById('api-toast');
+        const msgEl = document.getElementById('api-toast-msg');
+        msgEl.textContent = msg;
+        toast.style.borderLeftColor = isError ? '#e53e3e' : '#B8860B';
+        toast.classList.remove('hidden');
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function setButtonLoading(btnId, loading) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.style.opacity = loading ? '0.6' : '1';
+    }
+
+    function getDashboardToken() {
+        let token = loadPref('dashboard_token', '');
+        if (!token) {
+            const input = document.getElementById('dashboard-token-input');
+            token = input ? input.value.trim() : '';
+            if (token) savePref('dashboard_token', token);
+        }
+        return token;
+    }
+
+    async function fetchAnalyticsAPI() {
+        setButtonLoading('btn-refresh-analytics', true);
+        try {
+            const resp = await fetch('/api/analytics');
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || 'Analytics fetch failed');
+            // Update metric tiles with fresh API data (supplements Firestore real-time)
+            const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            if (data.total !== undefined) {
+                safeSet('m-total', data.total);
+                safeSet('m-new', data.new || 0);
+                safeSet('m-converted', data.converted || 0);
+                safeSet('m-contact-rate', (data.contact_rate_pct || 0) + '%');
+                safeSet('m-conv-rate', (data.conversion_rate_pct || 0) + '%');
+                const rev = data.revenue_projection || 0;
+                safeSet('m-revenue', '$' + rev.toLocaleString());
+                const pct = Math.min(data.mrr_progress_pct || 0, 100);
+                safeSet('m-mrr-pct', pct + '%');
+                const bar = document.getElementById('m-mrr-bar');
+                if (bar) bar.style.width = pct + '%';
+            }
+            showToast('Analytics refreshed' + (data.cached ? ' (cached)' : ''), false);
+        } catch (err) {
+            showToast('Analytics error: ' + err.message, true);
+        } finally {
+            setButtonLoading('btn-refresh-analytics', false);
+        }
+    }
+
+    async function triggerOutreachAPI() {
+        if (!confirm('Send outreach emails to all un-contacted leads?')) return;
+        const token = getDashboardToken();
+        if (!token) {
+            showToast('Set your Dashboard Auth Token in the field below first.', true);
+            const tokenSection = document.getElementById('api-token-section');
+            if (tokenSection) tokenSection.classList.remove('hidden');
+            return;
+        }
+        setButtonLoading('btn-run-outreach', true);
+        try {
+            const resp = await fetch('/api/outreach', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify({ dry_run: false }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || 'Outreach failed');
+            showToast('✓ ' + (data.message || 'Outreach completed'), false);
+        } catch (err) {
+            showToast('Outreach error: ' + err.message, true);
+        } finally {
+            setButtonLoading('btn-run-outreach', false);
+        }
+    }
+
+    async function triggerSchedulerAPI() {
+        if (!confirm('Run the Sentinel lead-collection job now?')) return;
+        setButtonLoading('btn-run-scheduler', true);
+        try {
+            const resp = await fetch('/api/scheduler');
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || 'Scheduler run failed');
+            showToast('✓ ' + (data.message || 'Sentinel ran successfully'), false);
+        } catch (err) {
+            showToast('Scheduler error: ' + err.message, true);
+        } finally {
+            setButtonLoading('btn-run-scheduler', false);
+        }
+    }
+
+    // Prefill token input from localStorage
+    (function() {
+        const saved = loadPref('dashboard_token', '');
+        const input = document.getElementById('dashboard-token-input');
+        if (input && saved) input.value = saved;
+        // Show token section only if no token saved yet
+        const section = document.getElementById('api-token-section');
+        if (section && !saved) section.classList.remove('hidden');
+    })();
+
+    function saveToken() {
+        const input = document.getElementById('dashboard-token-input');
+        const token = input ? input.value.trim() : '';
+        if (!token) { showToast('Please enter a token first.', true); return; }
+        savePref('dashboard_token', token);
+        const section = document.getElementById('api-token-section');
+        if (section) section.classList.add('hidden');
+        showToast('Token saved to browser storage.', false);
+    }
     </script>
 </body>
 </html>
