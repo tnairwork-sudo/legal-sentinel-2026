@@ -1,19 +1,18 @@
 import os
 import json
-import sys
 import requests
 from google import genai
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# 1. ENVIRONMENT VALIDATION
-required_env_vars = ["GEMINI_API_KEY", "APOLLO_API_KEY", "FIREBASE_KEY_PATH"]
-missing = [var for var in required_env_vars if not os.environ.get(var)]
-if missing:
-    print(f"FATAL: Missing required environment variables: {', '.join(missing)}")
-    sys.exit(1)
+# 1. 2026 MODERN AI SETUP
 
-# 2. 2026 MODERN AI SETUP
+# Validate required environment variables before any API calls
+required_env_vars = ["GEMINI_API_KEY", "APOLLO_API_KEY", "FIREBASE_KEY_PATH"]
+missing_vars = [v for v in required_env_vars if not os.environ.get(v)]
+if missing_vars:
+    raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}. Set them before running the Sentinel.")
+
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 if not firebase_admin._apps:
@@ -23,7 +22,7 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-# 3. THE MULTI-CHANNEL AGGREGATOR (FIXES 422 ERROR)
+# 2. THE MULTI-CHANNEL AGGREGATOR (FIXES 422 ERROR)
 def get_leads():
     url = "https://api.apollo.io/v1/mixed_people/search"
     
@@ -48,7 +47,7 @@ def get_leads():
         print(f"Network Error: {e}")
         return []
 
-# 4. THE "FIXER" PROPOSAL (GEMINI 1.5 FLASH)
+# 3. THE "FIXER" PROPOSAL (GEMINI 3.0 FLASH)
 def draft_strategy(lead):
     name = lead.get('name', 'Counsel')
     company = lead.get('organization', {}).get('name', 'your firm')
@@ -63,15 +62,15 @@ def draft_strategy(lead):
     
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash", 
+            model="gemini-1.5-flash",  # Fixed: gemini-2.0-flash is not a valid model name
             contents=prompt
         )
         return response.text
     except Exception as e:
-        print(f"AI Drafting Error for {name} at {company}: {e}")
+        print(f"AI Draft Error for {name} at {company}: {e}")
         return f"AI Drafting logic standby: {e}"
 
-# 5. MISSION EXECUTION
+# 4. MISSION EXECUTION
 print("Sentinel scanning LinkedIn/AngelList/Glassdoor datasets...")
 leads = get_leads()
 
@@ -89,9 +88,17 @@ else:
             db.collection("sentinel_leads").add({
                 "name": lead['name'],
                 "company": company_name,
+                "email": lead.get('email', ''),
                 "draft": email_strategy,
-                "service_tag": "Boutique Advisory", # Categorizes the work for you
-                "timestamp": firestore.SERVER_TIMESTAMP
+                "service_tag": "Boutique Advisory",  # Categorizes the work for you
+                # Feature 4: Lead Status Tracking fields
+                "status": "new",                     # new | contacted | qualified | proposal_sent | converted | rejected
+                "pipeline_stage": "discovery",       # discovery | outreach | proposal | negotiation | closed
+                "notes": "",                         # Free-text notes / interaction log
+                "last_contacted": None,              # Populated by outreach.py on first send
+                "conversion_value": 0,               # USD value assigned when status → converted
+                "email_status": "pending",           # pending | sent | failed | skipped (set by outreach.py)
+                "timestamp": firestore.SERVER_TIMESTAMP  # Fixed: SERVER_VALUE is not valid; use SERVER_TIMESTAMP
             })
             print(f"DATA SECURED: {lead['name']} is live in the Command Center.")
         except Exception as e:

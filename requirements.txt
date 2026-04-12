@@ -1,0 +1,18 @@
+# Legal Sentinel 2026 — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core AI & Firebase
+google-generativeai>=0.8.0
+firebase-admin>=6.0.0
+
+# HTTP
+requests>=2.31.0
+
+# Scheduler (Feature 5)
+APScheduler>=3.10.0
+
+# Email Outreach (Feature 2)
+sendgrid>=6.10.0
+
+# Environment variable management
+python-dotenv>=1.0.0

@@ -11,57 +11,132 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --gold: #B8860B;
-            --obsidian: #050505;
-        }
+        :root { --gold: #B8860B; --obsidian: #050505; }
         body {
             background-color: var(--obsidian);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(184, 134, 11, 0.12) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(184, 134, 11, 0.08) 0px, transparent 50%);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(184,134,11,0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(184,134,11,0.08) 0px, transparent 50%);
             font-family: 'Inter', sans-serif;
             color: #f1f1f1;
         }
         .glass-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255,255,255,0.03);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255,255,255,0.08);
             border-radius: 1.25rem;
-            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: all 0.5s cubic-bezier(0.19,1,0.22,1);
         }
         .glass-card:hover {
-            border-color: rgba(184, 134, 11, 0.5);
-            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(184,134,11,0.5);
+            background: rgba(255,255,255,0.05);
             transform: translateY(-4px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
+        /* Prevent hover lift on interactive inner elements */
+        .glass-card select, .glass-card textarea, .glass-card button { transform: none !important; }
         .gold-text {
             background: linear-gradient(135deg, #B8860B 0%, #E6B43C 50%, #B8860B 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .yoshiki-overlay {
-            position: fixed;
-            inset: 0;
-            opacity: 0.04;
-            pointer-events: none;
+            position: fixed; inset: 0; opacity: 0.04; pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 0l40 40-40 40L0 40z' fill='%23ffffff' fill-rule='evenodd'/%3E%3C/svg%3E");
             z-index: 0;
         }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+
+        /* Feature 1 – Filter bar */
+        .filter-btn {
+            padding: 5px 14px; border-radius: 20px; font-size: 10px; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04); color: #888;
+            transition: all 0.2s ease;
+        }
+        .filter-btn.active, .filter-btn:hover {
+            background: rgba(184,134,11,0.2); border-color: #B8860B; color: #E6B43C;
+        }
+
+        /* Feature 4 – Status badge colours */
+        .status-new        { background: rgba(59,130,246,0.15);  color: #93c5fd; border-color: rgba(59,130,246,0.3);  }
+        .status-contacted  { background: rgba(234,179,8,0.15);   color: #fde047; border-color: rgba(234,179,8,0.3);   }
+        .status-qualified  { background: rgba(168,85,247,0.15);  color: #d8b4fe; border-color: rgba(168,85,247,0.3);  }
+        .status-proposal_sent { background: rgba(249,115,22,0.15); color: #fdba74; border-color: rgba(249,115,22,0.3); }
+        .status-converted  { background: rgba(34,197,94,0.15);   color: #86efac; border-color: rgba(34,197,94,0.3);   }
+        .status-rejected   { background: rgba(239,68,68,0.15);   color: #fca5a5; border-color: rgba(239,68,68,0.3);   }
+
+        /* Feature 2 – Email status pill */
+        .email-sent    { color: #86efac; }
+        .email-failed  { color: #fca5a5; }
+        .email-pending { color: #9ca3af; }
+        .email-skipped { color: #6b7280; }
+
+        /* Feature 3 – Metric tiles */
+        .metric-tile {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 0.75rem; padding: 14px 16px; flex: 1 1 0;
+        }
+        .metric-tile .val { font-size: 22px; font-weight: 300; color: #fff; }
+        .metric-tile .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: #666; margin-top: 2px; }
+
+        /* Notes textarea */
+        textarea.notes-input {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 0.5rem; padding: 10px 12px; font-size: 12px; color: #ccc;
+            resize: vertical; min-height: 64px; font-family: inherit;
+        }
+        textarea.notes-input:focus { outline: 1px solid rgba(184,134,11,0.5); }
+
+        /* Sort select */
+        select.sort-select {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 6px 10px; font-size: 10px; color: #aaa;
+            cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        select.sort-select:focus { outline: 1px solid #B8860B; }
+
+        /* Search input */
+        input.search-input {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 9px 14px; font-size: 12px; color: #f1f1f1;
+            width: 100%; transition: border 0.2s;
+        }
+        input.search-input:focus { outline: none; border-color: rgba(184,134,11,0.6); }
+        input.search-input::placeholder { color: #555; }
+
+        /* Pipeline bar */
+        .pipe-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; }
+        .pipe-fill { height: 100%; background: linear-gradient(90deg, #B8860B, #E6B43C); transition: width 0.6s ease; }
     </style>
 </head>
 <body class="min-h-screen p-6 md:p-12 relative">
     <div class="yoshiki-overlay"></div>
 
-    <header class="max-w-7xl mx-auto mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+    <!-- HEADER -->
+    <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
         <div>
-            <h1 class="text-6xl font-bold tracking-tight gold-text mb-3" style="font-family: 'Playfair Display';">Sentinel Command</h1>
+            <h1 class="text-6xl font-bold tracking-tight gold-text mb-3" style="font-family:'Playfair Display';">Sentinel Command</h1>
             <p class="text-xs uppercase tracking-[0.4em] text-gray-500 font-semibold italic">Strategic Risk Intelligence // Tushar Nair SC Advocate</p>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 flex-wrap">
+            <!-- API Action Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                <button id="btn-refresh-analytics" onclick="fetchAnalyticsAPI()"
+                    class="filter-btn" style="white-space:nowrap;">
+                    📊 Refresh Analytics
+                </button>
+                <button id="btn-run-outreach" onclick="triggerOutreachAPI()"
+                    class="filter-btn" style="white-space:nowrap;">
+                    📧 Run Outreach
+                </button>
+                <button id="btn-run-scheduler" onclick="triggerSchedulerAPI()"
+                    class="filter-btn" style="white-space:nowrap;">
+                    🔄 Run Sentinel Now
+                </button>
+            </div>
             <div class="text-right">
                 <div class="flex items-center justify-end gap-2 mb-1">
                     <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
@@ -72,13 +147,100 @@
         </div>
     </header>
 
+    <!-- API Status Toast -->
+    <div id="api-toast" class="hidden fixed bottom-6 right-6 z-50 glass-card px-6 py-4 max-w-sm text-sm"
+         style="border-left: 3px solid #B8860B;">
+        <span id="api-toast-msg"></span>
+    </div>
+
+    <!-- FEATURE 1: Search & Filter bar -->
+    <div class="max-w-7xl mx-auto mb-8 relative z-10 glass-card p-5">
+        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <!-- Search -->
+            <div class="flex-1">
+                <input id="search-input" class="search-input" type="text"
+                    placeholder="Search by name, company, or service tag…" oninput="applyFilters()">
+            </div>
+            <!-- Status filters -->
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-[9px] uppercase tracking-widest text-gray-600 mr-1">Status:</span>
+                <button class="filter-btn active" data-status="all" onclick="setStatusFilter(this, 'all')">All</button>
+                <button class="filter-btn" data-status="new" onclick="setStatusFilter(this, 'new')">New</button>
+                <button class="filter-btn" data-status="contacted" onclick="setStatusFilter(this, 'contacted')">Contacted</button>
+                <button class="filter-btn" data-status="converted" onclick="setStatusFilter(this, 'converted')">Converted</button>
+                <button class="filter-btn" data-status="rejected" onclick="setStatusFilter(this, 'rejected')">Rejected</button>
+            </div>
+            <!-- Sort -->
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] uppercase tracking-widest text-gray-600">Sort:</span>
+                <select class="sort-select" id="sort-select" onchange="applyFilters()">
+                    <option value="date_desc">Newest</option>
+                    <option value="date_asc">Oldest</option>
+                    <option value="company_asc">Company A–Z</option>
+                    <option value="status_asc">Status A–Z</option>
+                </select>
+            </div>
+            <!-- Export CSV (Feature 3) -->
+            <button onclick="exportCSV()" class="filter-btn" style="white-space:nowrap;">⬇ Export CSV</button>
+        </div>
+    </div>
+
     <main class="max-w-7xl mx-auto grid grid-cols-12 gap-10 relative z-10">
+        <!-- LEFT SIDEBAR -->
         <aside class="col-span-12 lg:col-span-4 space-y-8">
+
+            <!-- Existing: Risk Radar -->
             <section class="glass-card p-8">
                 <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-8 font-bold border-b border-white/5 pb-4">2026 Regulatory Risk Radar</h3>
                 <canvas id="riskRadar" class="max-w-full"></canvas>
             </section>
-            
+
+            <!-- FEATURE 3: Analytics Panel -->
+            <section class="glass-card p-8" id="analytics-panel">
+                <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-5 font-bold border-b border-white/5 pb-4">Pipeline Analytics</h3>
+                <!-- Metric tiles row 1 -->
+                <div class="flex gap-3 mb-3">
+                    <div class="metric-tile">
+                        <div class="val" id="m-total">—</div>
+                        <div class="lbl">Total Leads</div>
+                    </div>
+                    <div class="metric-tile">
+                        <div class="val" id="m-new">—</div>
+                        <div class="lbl">New</div>
+                    </div>
+                    <div class="metric-tile">
+                        <div class="val" id="m-converted">—</div>
+                        <div class="lbl">Converted</div>
+                    </div>
+                </div>
+                <!-- Metric tiles row 2 -->
+                <div class="flex gap-3 mb-5">
+                    <div class="metric-tile">
+                        <div class="val" id="m-contact-rate">—%</div>
+                        <div class="lbl">Contact Rate</div>
+                    </div>
+                    <div class="metric-tile">
+                        <div class="val" id="m-conv-rate">—%</div>
+                        <div class="lbl">Conv. Rate</div>
+                    </div>
+                    <div class="metric-tile">
+                        <div class="val" id="m-revenue">$0</div>
+                        <div class="lbl">Projected MRR</div>
+                    </div>
+                </div>
+                <!-- MRR progress bar -->
+                <div class="mb-6">
+                    <div class="flex justify-between text-[9px] text-gray-600 mb-1 uppercase tracking-widest">
+                        <span>$45k MRR Target</span>
+                        <span id="m-mrr-pct">0%</span>
+                    </div>
+                    <div class="pipe-bar"><div class="pipe-fill" id="m-mrr-bar" style="width:0%"></div></div>
+                </div>
+                <!-- Status distribution doughnut -->
+                <canvas id="statusChart" class="max-w-full" height="160"></canvas>
+            </section>
+
+            <!-- Existing: Retainer Pipeline -->
             <section class="glass-card p-8">
                 <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-6 font-bold">Retainer Pipeline Efficiency</h3>
                 <div class="flex items-end gap-2 mb-4">
@@ -92,6 +254,7 @@
             </section>
         </aside>
 
+        <!-- MAIN LEADS FEED -->
         <div class="col-span-12 lg:col-span-8">
             <div id="leads-feed" class="space-y-8">
                 <div class="glass-card p-20 text-center">
@@ -99,106 +262,490 @@
                     <p class="text-xs uppercase tracking-widest text-gray-500">Decrypting Firestore Node...</p>
                 </div>
             </div>
+            <div id="no-results" class="hidden glass-card p-16 text-center text-gray-500 uppercase tracking-widest text-[10px]">
+                No leads match your current filters.
+            </div>
         </div>
     </main>
 
+    <!-- API Auth Token Section (shown on first visit until token is saved) -->
+    <div id="api-token-section" class="hidden max-w-7xl mx-auto mt-8 relative z-10">
+        <div class="glass-card p-6">
+            <h3 class="text-[11px] uppercase tracking-[0.2em] text-gray-400 mb-4 font-bold">Dashboard Auth Token</h3>
+            <p class="text-xs text-gray-500 mb-4">Enter your <code class="text-yellow-700">DASHBOARD_AUTH_TOKEN</code> from Vercel environment variables to enable outreach actions. Saved locally in your browser.</p>
+            <div class="flex gap-3 items-center">
+                <input id="dashboard-token-input" type="password"
+                    class="search-input flex-1"
+                    placeholder="Paste your DASHBOARD_AUTH_TOKEN here…">
+                <button onclick="saveToken()" class="filter-btn" style="white-space:nowrap;">Save Token</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 1. FIREBASE MASTER CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyDpTOxYombXaKtoO5PYmb9D-rlrgdsJDkg",
-            authDomain: "tnlaw-87ba6.firebaseapp.com",
-            projectId: "tnlaw-87ba6",
-            storageBucket: "tnlaw-87ba6.firebasestorage.app",
-            messagingSenderId: "410481207969",
-            appId: "1:410481207969:web:bc048caf184422dda4dee0",
-            measurementId: "G-7SLQ8TGXE6"
-        };
+    // ─── 1. FIREBASE MASTER CONFIG ────────────────────────────────────────────
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpTOxYombXaKtoO5PYmb9D-rlrgdsJDkg",
+        authDomain: "tnlaw-87ba6.firebaseapp.com",
+        projectId: "tnlaw-87ba6",
+        storageBucket: "tnlaw-87ba6.firebasestorage.app",
+        messagingSenderId: "410481207969",
+        appId: "1:410481207939:web:bc048caf184422dda4dee0",
+        measurementId: "G-7SLQ8TGXE6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // 2. RADAR CHART INITIALIZATION
-        const ctx = document.getElementById('riskRadar').getContext('2d');
-        new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: ['Electricity', 'Philanthropy', 'FDI', 'FCRA', 'CSR', 'Governance'],
-                datasets: [{
-                    label: 'Risk Vector',
-                    data: [95, 88, 72, 90, 65, 82],
-                    backgroundColor: 'rgba(184, 134, 11, 0.15)',
-                    borderColor: '#B8860B',
-                    borderWidth: 1.5,
-                    pointBackgroundColor: '#FFD700',
-                    pointRadius: 3
-                }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: {
-                    r: {
-                        grid: { color: 'rgba(255,255,255,0.05)' },
-                        angleLines: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { display: false },
-                        pointLabels: { color: '#666', font: { size: 10, weight: '600' } }
-                    }
-                }
-            }
-        });
-
-        // 3. LIVE DATA SYNC
-        db.collection("sentinel_leads").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
-            const feed = document.getElementById("leads-feed");
-            if (snapshot.empty) {
-                feed.innerHTML = '<div class="glass-card p-20 text-center text-gray-500 uppercase tracking-widest text-[10px]">The Vault is Empty. Fire the GitHub Sentinel.</div>';
-                return;
-            }
-            
-            feed.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const lead = doc.data();
-                const time = (lead.timestamp && lead.timestamp.seconds) ? new Date(lead.timestamp.seconds * 1000).toLocaleDateString() : 'Active Now';
-                
-                feed.innerHTML += `
-                    <article class="glass-card overflow-hidden group">
-                        <div class="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
-                            <div>
-                                <h2 class="text-2xl font-bold text-white mb-1 group-hover:text-yellow-500 transition-colors">${lead.name}</h2>
-                                <p class="text-xs uppercase tracking-widest text-gray-500">${lead.company} // Detected: ${time}</p>
-                            </div>
-                            <div class="px-4 py-1.5 rounded-full border border-yellow-900/50 bg-yellow-900/10 text-yellow-600 text-[9px] font-bold uppercase tracking-tighter">
-                                Retainer Opportunity
-                            </div>
-                        </div>
-                        <div class="p-8">
-                            <div class="bg-black/40 rounded-xl p-6 mb-8 border border-white/5 font-mono text-[13px] text-gray-400 leading-relaxed max-h-64 overflow-y-auto custom-scroll">
-                                ${lead.draft}
-                            </div>
-                            <button onclick="copyDraft(\`${lead.draft.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" 
-                                class="w-full bg-white/5 border border-white/10 hover:bg-yellow-700 hover:text-black hover:border-yellow-700 py-4 rounded-xl transition-all font-bold uppercase text-[10px] tracking-[0.2em]">
-                                Copy Strategic Outreach
-                            </button>
-                        </div>
-                    </article>
-                `;
-            });
-        }, (error) => {
-            const feed = document.getElementById("leads-feed");
-            console.error("Firestore Error:", error);
-            feed.innerHTML = `<div class="glass-card p-20 text-center text-red-500 uppercase tracking-widest text-[10px]">Connection Error: ${error.message}. Check Firestore permissions.</div>`;
-        });
-
-        function copyDraft(text) {
-            navigator.clipboard.writeText(text);
-            const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = "STRATEGY SECURED TO CLIPBOARD";
-            btn.classList.add("bg-yellow-700", "text-black");
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.classList.remove("bg-yellow-700", "text-black");
-            }, 2000);
+    // ─── 2. RADAR CHART ───────────────────────────────────────────────────────
+    new Chart(document.getElementById('riskRadar').getContext('2d'), {
+        type: 'radar',
+        data: {
+            labels: ['Electricity','Philanthropy','FDI','FCRA','CSR','Governance'],
+            datasets: [{
+                label: 'Risk Vector',
+                data: [95,88,72,90,65,82],
+                backgroundColor: 'rgba(184,134,11,0.15)',
+                borderColor: '#B8860B', borderWidth: 1.5,
+                pointBackgroundColor: '#FFD700', pointRadius: 3
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { r: {
+                grid: { color: 'rgba(255,255,255,0.05)' },
+                angleLines: { color: 'rgba(255,255,255,0.05)' },
+                ticks: { display: false },
+                pointLabels: { color: '#666', font: { size: 10, weight: '600' } }
+            }}
         }
+    });
+
+    // ─── 3. STATUS DISTRIBUTION CHART (Feature 3) ─────────────────────────────
+    let statusChart = new Chart(document.getElementById('statusChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['New','Contacted','Qualified','Proposal','Converted','Rejected'],
+            datasets: [{
+                data: [0,0,0,0,0,0],
+                backgroundColor: [
+                    'rgba(59,130,246,0.7)','rgba(234,179,8,0.7)','rgba(168,85,247,0.7)',
+                    'rgba(249,115,22,0.7)','rgba(34,197,94,0.7)','rgba(239,68,68,0.7)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom', labels: { color: '#666', font: { size: 9 }, boxWidth: 10, padding: 8 } } },
+            cutout: '65%'
+        }
+    });
+
+    // ─── 4. STATE ─────────────────────────────────────────────────────────────
+    let allLeads = [];         // [{id, ...data}]
+    let activeStatusFilter = loadPref('statusFilter', 'all');
+    let activeSearchQuery  = loadPref('searchQuery', '');
+    let activeSort         = loadPref('sortOrder', 'date_desc');
+
+    // Restore persisted values into UI
+    document.getElementById('search-input').value = activeSearchQuery;
+    document.getElementById('sort-select').value  = activeSort;
+    document.querySelectorAll('.filter-btn[data-status]').forEach(b => {
+        b.classList.toggle('active', b.dataset.status === activeStatusFilter);
+    });
+
+    // ─── 5. LIVE DATA SYNC ────────────────────────────────────────────────────
+    db.collection("sentinel_leads")
+      .orderBy("timestamp", "desc")
+      .onSnapshot((snapshot) => {
+        allLeads = [];
+        snapshot.forEach(doc => {
+            allLeads.push({ id: doc.id, ...doc.data() });
+        });
+        updateAnalytics(allLeads);
+        applyFilters();
+    }, (error) => {
+        console.error("Firestore Sync Error:", error);
+        document.getElementById("leads-feed").innerHTML =
+            `<div class="glass-card p-20 text-center text-red-500 uppercase tracking-widest text-[10px]">
+                Command Center Offline: ${escapeHtml(error.message)}. Check Firestore permissions or connection.
+            </div>`;
+    });
+
+    // ─── 6. FEATURE 1: FILTERING & SORTING ───────────────────────────────────
+    function setStatusFilter(btn, status) {
+        document.querySelectorAll('.filter-btn[data-status]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeStatusFilter = status;
+        savePref('statusFilter', status);
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const q = document.getElementById('search-input').value.trim().toLowerCase();
+        const sort = document.getElementById('sort-select').value;
+        activeSearchQuery = q;
+        activeSort = sort;
+        savePref('searchQuery', q);
+        savePref('sortOrder', sort);
+
+        let filtered = allLeads.filter(lead => {
+            const matchStatus = activeStatusFilter === 'all' ||
+                (lead.status || 'new').toLowerCase() === activeStatusFilter;
+            const matchSearch = !q || [lead.name, lead.company, lead.service_tag]
+                .some(f => (f || '').toLowerCase().includes(q));
+            return matchStatus && matchSearch;
+        });
+
+        // Sort
+        filtered.sort((a, b) => {
+            if (sort === 'date_desc') return tsToMs(b.timestamp) - tsToMs(a.timestamp);
+            if (sort === 'date_asc')  return tsToMs(a.timestamp) - tsToMs(b.timestamp);
+            if (sort === 'company_asc') return (a.company||'').localeCompare(b.company||'');
+            if (sort === 'status_asc')  return (a.status||'').localeCompare(b.status||'');
+            return 0;
+        });
+
+        renderLeads(filtered);
+    }
+
+    // ─── 7. RENDER LEADS ──────────────────────────────────────────────────────
+    function renderLeads(leads) {
+        const feed = document.getElementById("leads-feed");
+        const noResults = document.getElementById("no-results");
+
+        if (allLeads.length === 0) {
+            feed.innerHTML = '<div class="glass-card p-20 text-center text-gray-500 uppercase tracking-widest text-[10px]">The Vault is Empty. Fire the GitHub Sentinel.</div>';
+            noResults.classList.add('hidden');
+            return;
+        }
+
+        if (leads.length === 0) {
+            feed.innerHTML = '';
+            noResults.classList.remove('hidden');
+            return;
+        }
+
+        noResults.classList.add('hidden');
+        feed.innerHTML = '';
+        leads.forEach(lead => {
+            feed.innerHTML += buildLeadCard(lead);
+        });
+    }
+
+    function buildLeadCard(lead) {
+        const docId = lead.id;
+        const status = (lead.status || 'new').toLowerCase();
+        const emailStatus = lead.email_status || 'pending';
+        const time = formatTs(lead.timestamp);
+        const lastContacted = lead.last_contacted ? formatTs(lead.last_contacted) : '—';
+        const notes = escapeHtml(lead.notes || '');
+        const draftSafe = escapeHtml(lead.draft || '');
+        const draftEscaped = (lead.draft || '').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        const emailIcon = { sent:'✓', failed:'✗', pending:'○', skipped:'–' }[emailStatus] || '○';
+
+        // Feature 4: status selector options
+        const statusOptions = ['new','contacted','qualified','proposal_sent','converted','rejected']
+            .map(s => `<option value="${s}" ${s===status?'selected':''}>${s.replace('_',' ')}</option>`)
+            .join('');
+
+        return `
+        <article class="glass-card overflow-hidden group" data-doc="${docId}">
+            <div class="p-6 border-b border-white/5 flex flex-wrap justify-between items-start gap-4 bg-white/[0.01]">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold text-white mb-1 group-hover:text-yellow-500 transition-colors truncate">${escapeHtml(lead.name || '')}</h2>
+                    <p class="text-xs uppercase tracking-widest text-gray-500">${escapeHtml(lead.company || '')} // Detected: ${time}</p>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    <!-- Feature 2: email status -->
+                    <span class="text-[10px] email-${emailStatus} font-mono" title="Email status: ${emailStatus}">
+                        ${emailIcon} ${emailStatus}
+                        ${lead.last_contacted ? '· ' + lastContacted : ''}
+                    </span>
+                    <!-- Feature 4: status badge -->
+                    <span class="px-3 py-1 rounded-full border text-[9px] font-bold uppercase tracking-tighter status-${status}">
+                        ${status.replace('_',' ')}
+                    </span>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <!-- AI Draft -->
+                <div class="bg-black/40 rounded-xl p-5 mb-5 border border-white/5 font-mono text-[13px] text-gray-400 leading-relaxed max-h-48 overflow-y-auto">
+                    ${draftSafe}
+                </div>
+
+                <!-- Feature 4: Status update + Feature 2: Outreach button -->
+                <div class="flex flex-wrap gap-3 mb-5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] uppercase tracking-widest text-gray-600">Status:</span>
+                        <select class="sort-select text-[10px]" onchange="updateStatus('${docId}', this.value)">
+                            ${statusOptions}
+                        </select>
+                    </div>
+                    <!-- Feature 2: Send Outreach button -->
+                    <button onclick="markOutreachSent('${docId}', '${escapeHtml(lead.name||'')}', this)"
+                        class="filter-btn ${emailStatus === 'sent' ? 'active' : ''}">
+                        ${emailStatus === 'sent' ? '✓ Outreach Sent' : '✉ Send Outreach'}
+                    </button>
+                    <button onclick="copyDraft(\`${draftEscaped}\`)"
+                        class="filter-btn">
+                        Copy Draft
+                    </button>
+                </div>
+
+                <!-- Feature 4: Notes editor -->
+                <div>
+                    <span class="text-[9px] uppercase tracking-widest text-gray-600 block mb-1">Notes</span>
+                    <textarea class="notes-input" placeholder="Add interaction notes…"
+                        onblur="saveNotes('${docId}', this.value)">${notes}</textarea>
+                </div>
+            </div>
+        </article>`;
+    }
+
+    // ─── 8. FEATURE 4: STATUS & NOTES UPDATES ────────────────────────────────
+    function updateStatus(docId, newStatus) {
+        db.collection("sentinel_leads").doc(docId).update({ status: newStatus })
+          .then(() => console.log("Status updated:", newStatus))
+          .catch(err => console.error("Status update error:", err));
+    }
+
+    function saveNotes(docId, notes) {
+        db.collection("sentinel_leads").doc(docId).update({ notes: notes })
+          .catch(err => console.error("Notes save error:", err));
+    }
+
+    // ─── 9. FEATURE 2: OUTREACH TRACKING ─────────────────────────────────────
+    function markOutreachSent(docId, name, btn) {
+        const now = firebase.firestore.FieldValue.serverTimestamp();
+        db.collection("sentinel_leads").doc(docId).update({
+            email_status: "sent",
+            last_contacted: now,
+            status: "contacted"
+        }).then(() => {
+            btn.textContent = "✓ Outreach Sent";
+            btn.classList.add('active');
+        }).catch(err => {
+            console.error("Outreach mark error:", err);
+            alert("Could not update outreach status: " + err.message);
+        });
+    }
+
+    // ─── 10. FEATURE 3: ANALYTICS ─────────────────────────────────────────────
+    const MRR_TARGET = 45000;
+    const AVG_DEAL = 5000;
+
+    function updateAnalytics(leads) {
+        const total = leads.length;
+        const byStatus = {};
+        leads.forEach(l => {
+            const s = (l.status || 'new').toLowerCase();
+            byStatus[s] = (byStatus[s] || 0) + 1;
+        });
+
+        const converted  = byStatus['converted'] || 0;
+        const newLeads   = byStatus['new'] || 0;
+        const contacted  = (byStatus['contacted']||0) + (byStatus['qualified']||0)
+                         + (byStatus['proposal_sent']||0) + converted;
+        const contactRate  = total ? Math.round(contacted / total * 100) : 0;
+        const convRate     = total ? Math.round(converted / total * 100) : 0;
+        const revenue      = converted * AVG_DEAL;
+        const mrrPct       = Math.min(Math.round(revenue / MRR_TARGET * 100), 100);
+
+        document.getElementById('m-total').textContent = total;
+        document.getElementById('m-new').textContent   = newLeads;
+        document.getElementById('m-converted').textContent = converted;
+        document.getElementById('m-contact-rate').textContent = contactRate + '%';
+        document.getElementById('m-conv-rate').textContent    = convRate + '%';
+        document.getElementById('m-revenue').textContent = '$' + (revenue/1000).toFixed(0) + 'k';
+        document.getElementById('m-mrr-pct').textContent = mrrPct + '%';
+        document.getElementById('m-mrr-bar').style.width = mrrPct + '%';
+
+        // Update doughnut
+        statusChart.data.datasets[0].data = [
+            byStatus['new']||0,
+            byStatus['contacted']||0,
+            byStatus['qualified']||0,
+            byStatus['proposal_sent']||0,
+            byStatus['converted']||0,
+            byStatus['rejected']||0
+        ];
+        statusChart.update();
+    }
+
+    // ─── 11. CSV EXPORT (Feature 3) ───────────────────────────────────────────
+    function exportCSV() {
+        if (!allLeads.length) { alert("No leads to export."); return; }
+        const headers = ["name","company","service_tag","status","email_status","last_contacted","timestamp","notes"];
+        const rows = allLeads.map(l => headers.map(h => {
+            let v = l[h];
+            if (h === 'timestamp' || h === 'last_contacted') v = formatTs(v);
+            return '"' + String(v||'').replace(/"/g,'""') + '"';
+        }).join(','));
+        const csv = [headers.join(','), ...rows].join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        a.download = 'sentinel_leads_' + new Date().toISOString().slice(0,10) + '.csv';
+        a.click();
+    }
+
+    // ─── 12. UTILITIES ────────────────────────────────────────────────────────
+    function tsToMs(ts) {
+        if (!ts) return 0;
+        if (ts.seconds !== undefined) return ts.seconds * 1000;
+        if (ts instanceof Date) return ts.getTime();
+        return 0;
+    }
+
+    function formatTs(ts) {
+        if (!ts) return '—';
+        if (ts.seconds !== null && ts.seconds !== undefined)
+            return new Date(ts.seconds * 1000).toLocaleDateString();
+        if (ts instanceof Date) return ts.toLocaleDateString();
+        return '—';
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function copyDraft(text) {
+        navigator.clipboard.writeText(text);
+        const btn = event.target;
+        const orig = btn.innerText;
+        btn.innerText = "STRATEGY SECURED TO CLIPBOARD";
+        btn.classList.add('active');
+        setTimeout(() => { btn.innerText = orig; btn.classList.remove('active'); }, 2000);
+    }
+
+    // localStorage helpers
+    function savePref(key, val) { try { localStorage.setItem('sentinel_' + key, val); } catch(e){} }
+    function loadPref(key, def) { try { return localStorage.getItem('sentinel_' + key) || def; } catch(e){ return def; } }
+
+    // ─── 13. API ENDPOINT HELPERS ─────────────────────────────────────────────
+    let _toastTimer = null;
+
+    function showToast(msg, isError) {
+        const toast = document.getElementById('api-toast');
+        const msgEl = document.getElementById('api-toast-msg');
+        msgEl.textContent = msg;
+        toast.style.borderLeftColor = isError ? '#e53e3e' : '#B8860B';
+        toast.classList.remove('hidden');
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function setButtonLoading(btnId, loading) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.style.opacity = loading ? '0.6' : '1';
+    }
+
+    function getDashboardToken() {
+        let token = loadPref('dashboard_token', '');
+        if (!token) {
+            const input = document.getElementById('dashboard-token-input');
+            token = input ? input.value.trim() : '';
+            if (token) savePref('dashboard_token', token);
+        }
+        return token;
+    }
+
+    async function fetchAnalyticsAPI() {
+        setButtonLoading('btn-refresh-analytics', true);
+        try {
+            const resp = await fetch('/api/analytics');
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || 'Analytics fetch failed');
+            // Update metric tiles with fresh API data (supplements Firestore real-time)
+            const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            if (data.total !== undefined) {
+                safeSet('m-total', data.total);
+                safeSet('m-new', data.new || 0);
+                safeSet('m-converted', data.converted || 0);
+                safeSet('m-contact-rate', (data.contact_rate_pct || 0) + '%');
+                safeSet('m-conv-rate', (data.conversion_rate_pct || 0) + '%');
+                const rev = data.revenue_projection || 0;
+                safeSet('m-revenue', '$' + rev.toLocaleString());
+                const pct = Math.min(data.mrr_progress_pct || 0, 100);
+                safeSet('m-mrr-pct', pct + '%');
+                const bar = document.getElementById('m-mrr-bar');
+                if (bar) bar.style.width = pct + '%';
+            }
+            showToast('Analytics refreshed' + (data.cached ? ' (cached)' : ''), false);
+        } catch (err) {
+            showToast('Analytics error: ' + err.message, true);
+        } finally {
+            setButtonLoading('btn-refresh-analytics', false);
+        }
+    }
+
+    async function triggerOutreachAPI() {
+        if (!confirm('Send outreach emails to all un-contacted leads?')) return;
+        const token = getDashboardToken();
+        if (!token) {
+            showToast('Set your Dashboard Auth Token in the field below first.', true);
+            const tokenSection = document.getElementById('api-token-section');
+            if (tokenSection) tokenSection.classList.remove('hidden');
+            return;
+        }
+        setButtonLoading('btn-run-outreach', true);
+        try {
+            const resp = await fetch('/api/outreach', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token,
+                },
+                body: JSON.stringify({ dry_run: false }),
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || 'Outreach failed');
+            showToast('✓ ' + (data.message || 'Outreach completed'), false);
+        } catch (err) {
+            showToast('Outreach error: ' + err.message, true);
+        } finally {
+            setButtonLoading('btn-run-outreach', false);
+        }
+    }
+
+    async function triggerSchedulerAPI() {
+        if (!confirm('Run the Sentinel lead-collection job now?')) return;
+        setButtonLoading('btn-run-scheduler', true);
+        try {
+            const resp = await fetch('/api/scheduler');
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.message || 'Scheduler run failed');
+            showToast('✓ ' + (data.message || 'Sentinel ran successfully'), false);
+        } catch (err) {
+            showToast('Scheduler error: ' + err.message, true);
+        } finally {
+            setButtonLoading('btn-run-scheduler', false);
+        }
+    }
+
+    // Prefill token input from localStorage
+    (function() {
+        const saved = loadPref('dashboard_token', '');
+        const input = document.getElementById('dashboard-token-input');
+        if (input && saved) input.value = saved;
+        // Show token section only if no token saved yet
+        const section = document.getElementById('api-token-section');
+        if (section && !saved) section.classList.remove('hidden');
+    })();
+
+    function saveToken() {
+        const input = document.getElementById('dashboard-token-input');
+        const token = input ? input.value.trim() : '';
+        if (!token) { showToast('Please enter a token first.', true); return; }
+        savePref('dashboard_token', token);
+        const section = document.getElementById('api-token-section');
+        if (section) section.classList.add('hidden');
+        showToast('Token saved to browser storage.', false);
+    }
     </script>
 </body>
 </html>
