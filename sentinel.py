@@ -28,7 +28,7 @@ MAX_LEADS_PER_RUN = 150
 # 2. THE MULTI-CHANNEL AGGREGATOR (FIXES 422 ERROR)
 def get_leads(keywords=None, locations=None, titles=None, employee_ranges=None):
     """Search Apollo for leads using the given parameters. Returns a list of people."""
-    url = "https://api.apollo.io/v1/mixed_people/search"
+    url = "https://api.apollo.io/v1/people/search"
 
     q_keywords = keywords or "Contract Drafting, Legal Due Diligence, Document Review, Corporate Advisory, India Expansion, FDI compliance"
     data = {
@@ -42,7 +42,11 @@ def get_leads(keywords=None, locations=None, titles=None, employee_ranges=None):
     }
 
     try:
-        response = requests.post(url, json=data)
+        response = requests.post(url, json=data, headers={
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+            "X-Api-Key": os.environ.get("APOLLO_API_KEY", ""),
+        })
         if response.status_code != 200:
             print(f"Aggregator Error {response.status_code}: {response.text}")
             return []
@@ -174,7 +178,7 @@ def draft_strategy(lead):
     
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",  # Fixed: gemini-2.0-flash is not a valid model name
+            model="gemini-2.0-flash-lite",  # gemini-2.0-flash-lite is widely available and cost-efficient
             contents=prompt
         )
         return response.text

@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # Core AI & Firebase
-google-generativeai>=0.8.0
+google-genai>=0.8.0
 firebase-admin>=6.0.0
 
 # HTTP
